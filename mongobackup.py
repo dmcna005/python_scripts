@@ -9,33 +9,26 @@ from time import gmtime, strftime
 #from shutil import make_archive
 #from cryptography.fernet import Fernet
 from subprocess import call, Popen, PIPE, STDOUT, check_call, CalledProcessError
-#from backup_conf import appdb, oplog1, oplog2, npoplog, backup_directory, retention_time
-#from backup_conf import smtp_server, smtp_alert_recipient, opsmgr_dbs
 
 __author__ = 'Dwayne McNab'
-__version__ = '1.0.1'
-__license__ = 'equifax'
+__version__ = '1.0.2'
 
-# Do not make changes to this script. Instead use the backup.conf files
+# Do not make changes to this script. Instead use the mongobackup.conf file
 # to overwrite the following variables
 config = RawConfigParser()
 config.read('backup.conf')
-appdb = config.get('APPDB', 'appdb')
-oplog1 = config.get('OPLOG1', 'oplog1')
-oplog2 = config.get('OPLOG2', 'oplog2')
-npoplog = config.get('NPOPLOG', 'npoplog')
+host = config.get('BACKUPDB', 'host')
 backup_directory = config.get('DEFAULT', 'backup_directory')
 retention_time = int(config.get('DEFAULT', 'retention_time'))
 smtp_server = conf.get('DEFAULT', 'smtp_server')
 smtp_alert_recipient = conf.get('DEFAULT', 'smtp_alert_recipient')
-opsmgr_dbs = [appdb, oplog1, oplog2, npoplog]
 
 # Because I want the name to be shorter :)
 backup_dir = backup_directory
 
 if not os.path.exists(backup_dir):
     raise OSError('backup directory does not exist! exiting script')
-    send = sendMailAlert('backup directory %s was removed!!' % backup_dir)
+    send = sendMailAlert('backup directory %s does not exists!!' % backup_dir)
     exit(1)
 
     try:
@@ -50,9 +43,6 @@ old_time = (now - retention)
 #old_time = datetime.datetime.now() - datetime.timedelta(minutes=15)
 mod_time = strftime("%a-%d-%b-%Y-%H-%M-%S", gmtime())
 archives = os.listdir(backup_directory)
-mms_dir = '/opt/mongodb/mms/conf'
-release_dir = '/opt/mongodb/mms/mongodb-releases'
-key_file = '/etc/mongodb-mms'
 username = user
 password = passwd
 HOSTNAME = str(socket.gethostname())
@@ -74,7 +64,7 @@ for i in archives:
 #setup a send mail service to use for email alerts
 def sendMailAlert(error):
     SERVER = smtp_server
-    FROM = HOSTNAME + "@equifax.com"
+    FROM = HOSTNAME + from_domain
     TO = smtp_alert_recipient
     SUBJECT = HOSTNAME + ' ' + 'Error Occured: %s' % error
     TEXT = 'Script failed with error: ' + HOSTNAME + '%s' % (error)
@@ -144,37 +134,13 @@ def run_backup():
             except Exception as e:
                 send = sendMailAlert('%s failed to take dump. Error message: %s' % (db_name, e))
 
-    if os.path.exists(mms_dir):
-        conf_name = 'conf_archives-' + mod_time + '.zip'
-        back_files = os.path.join(backup_dir, conf_name)
-        zip_files(mms_dir, back_files)
+    if os.path.exists(backup_dir):
+        backup_name = 'mongodb-backup' + mod_time + '.zip'
+        back_files = os.path.join(backup_dir, backup_name)
+        zip_files(backup_dir, back_files)
     else:
         raise OSError('directory %s was removed' % mms_dir)
-        send = sendMailAlert('directory %s was removed' % mms_dir)
-
-    # copying mongodb-releases
-    if os.path.exists(release_dir):
-        mongodb = 'mongod_binaries-' + mod_time + '.zip'
-        mongod_binaries = os.path.join(backup_dir,  mongodb)
-        zip_files(release_dir, mongod_binaries)
-    else:
-        raise OSError('directory %s was removed' % release_dir)
-        send = sendMailAlert('directory %s was removed' % release_dir)
-
-    if os.path.exists(key_file):
-        src = os.path.join(key_file, 'gen.key')
-        genkey = 'gen.key-' + mod_time + '.zip'
-        dst = os.path.join(backup_dir, genkey)
-        zip_files(key_file, dst)
-    else:
-        raise OSError('directory %s was removed' % key_file)
-        send = sendMailAlert('directory %s was removed' % key_file)
-
-    #check if permission of gen.key is 640 and send eamil if its not
-    key = os.path.join(key_file, 'gen.key')
-    mode = oct(os.stat(key).st_mode)[-3:]
-    if mode != '600':
-        mode_alert = sendMailAlert('Alert: gen.key file has permission %s ' % mode)
+        send = sendMailAlert('directory %s does not exists!!' % backup_dir)
 
 
 if __name__ == "__main__":
