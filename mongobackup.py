@@ -122,17 +122,15 @@ def run_backup():
     cdir = os.getcwd()
     if cdir != backup_dir:
         os.chdir(backup_dir)
-
-        for db in opsmgr_dbs:
-            regex = re.compile('.*\/')
-            m = regex.match(db)
-            dump_name = m.group().strip('/')
-            args = [dump, '--host', db, '-u', username, '-p', password, '--archive=%s' % dump_name + '-' + mod_time + '.gz', '--gzip', \
-            '--readPreference=secondary', '--oplog', '--authenticationDatabase=admin']
-            try:
-                call(args)
-            except Exception as e:
-                send = sendMailAlert('%s failed to take dump. Error message: %s' % (db_name, e))
+        regex = re.compile('.*\/')
+        m = regex.match(db)
+        dump_name = m.group().strip('/')
+        args = [dump, '--host=%s' % db, '--user=%s' % username, '--password=%s' % password, '--out=%s' % dump_name + '-' + mod_time + '.gz', '--gzip', \
+        '--readPreference=secondary', '--oplog', '--authenticationDatabase=admin']
+        try:
+            call(args)
+        except Exception as e:
+            send = sendMailAlert('%s failed to take dump. Error message: %s' % (db_name, e))
 
     if os.path.exists(backup_dir):
         backup_name = 'mongodb-backup' + mod_time + '.zip'
