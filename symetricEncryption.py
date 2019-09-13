@@ -18,6 +18,9 @@ def sym_encryption():
     e_username = encodeAES(cipher, user)
     e_passwd = encodeAES(cipher, password)
 
+    if not os.path.exists('/admim'):
+        os.mkdir('/admin')
+
     with open(os.path.join('/admin/keyfile.txt'), 'w') as f:
         f.write(key)
 

@@ -2,6 +2,7 @@
 import os, sys, time, errno, datetime, traceback
 import socket, smtplib, re, zipfile, shutil
 import tarfile
+import sendMail
 from ConfigParser import RawConfigParser
 from decryption import user, passwd
 from stat import *
@@ -16,15 +17,18 @@ __version__ = '1.0.2'
 # Do not make changes to this script. Instead use the mongobackup.conf file
 # to overwrite the following variables
 config = RawConfigParser()
-config.read('backup.conf')
-host = config.get('BACKUPDB', 'host')
-backup_directory = config.get('DEFAULT', 'backup_directory')
+config.read('mongobackup.conf')
+host = config.get('HOSTS', 'host')
+port = config.get('HOSTS', 'port')
+backup_directory = config.get('DEFAULT', 'backup_dir')
 retention_time = int(config.get('DEFAULT', 'retention_time'))
-smtp_server = conf.get('DEFAULT', 'smtp_server')
-smtp_alert_recipient = conf.get('DEFAULT', 'smtp_alert_recipient')
 
+
+
+dump = config.get('DEFAULT', 'dump_command')
 # Because I want the name to be shorter :)
 backup_dir = backup_directory
+sendMailAlert = sendMail.sendMailAlert('error')
 
 if not os.path.exists(backup_dir):
     raise OSError('backup directory does not exist! exiting script')
@@ -46,7 +50,6 @@ archives = os.listdir(backup_directory)
 username = user
 password = passwd
 HOSTNAME = str(socket.gethostname())
-dump = '/usr/local/bin/mongodump'
 
 # recycle files greater than 7 days
 for i in archives:
@@ -62,24 +65,7 @@ for i in archives:
 
 
 #setup a send mail service to use for email alerts
-def sendMailAlert(error):
-    SERVER = smtp_server
-    FROM = HOSTNAME + from_domain
-    TO = smtp_alert_recipient
-    SUBJECT = HOSTNAME + ' ' + 'Error Occured: %s' % error
-    TEXT = 'Script failed with error: ' + HOSTNAME + '%s' % (error)
 
-    # Prepare actual message
-    message = """\
-    From: %s
-    To: %s
-    Subject: %s %s """ % (FROM, TO , SUBJECT, Text)
-    message = "From: %s\nTo: %s\nSubject: %s\n\n%s" % ( FROM, TO, SUBJECT, TEXT )
-
-    # Send the mail
-    server = smtplib.SMTP(SERVER)
-    server.sendmail(FROM, TO, message)
-    server.quit()
 
 def zip_files(src_files, dst_files):
     """ This will zip all contents of a folder
@@ -125,8 +111,9 @@ def run_backup():
         regex = re.compile('.*\/')
         m = regex.match(db)
         dump_name = m.group().strip('/')
-        args = [dump, '--host=%s' % db, '--user=%s' % username, '--password=%s' % password, '--out=%s' % dump_name + '-' + mod_time + '.gz', '--gzip', \
-        '--readPreference=secondary', '--oplog', '--authenticationDatabase=admin']
+        args = [dump, '--host=%s' % host, '--port=%s' % port, '--user=%s' % username, '--password=%s' % password, \
+        '--out=%s' % dump_name + '-' + mod_time, \
+        '--oplog', '--authenticationDatabase=admin', '--quiet']
         try:
             call(args)
         except Exception as e:
