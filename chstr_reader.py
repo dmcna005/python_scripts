@@ -51,9 +51,9 @@ if __name__ == '__main__':
     defaults = {
         'host': 'localhost',
         'port': 27017,
-        'database': 'sailthru',
-        'collection': 'client',
-        'pipeline': '[{"$match": {"fullDocument.client_id": 3386}}]'
+        'database': 'Test',
+        'collection': 'test',
+        'pipeline': '[{"$match": {"fullDocument.username": "someName"}]'
     }
     gen_help = lambda default_key: 'Defaults to {default_key}'.format(default_key=defaults.get(default_key))
     arg_parser = argparse.ArgumentParser(description=help)
