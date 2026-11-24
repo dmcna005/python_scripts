@@ -1,0 +1,29 @@
+mongo:
+  # Prefer the environment variable for the URI because it normally contains credentials.
+  uri_env: MONGODB_ATLAS_BILLING_URI
+  database: atlas-billing
+  line_items_collection: lineItems
+  invoices_collection: invoices
+  org_info_collection: orgInfo
+  # Optional MQL $match filter applied to lineItems before invoice/org lookups.
+  query: {}
+
+email:
+  enabled: true
+  smtp_host: smtp.us.deloitte.com
+  smtp_port: 25
+  use_tls: false
+  use_ssl: false
+  username: null
+  password_env: null
+  sender: ustidatabaseservicesmongodb@deloitte.com
+  recipients:
+    - dwmcnab@deloitte.com
+  subject: MongoDB Atlas billing report
+
+report:
+  output_dir: output_reports
+  # Leave null to use the latest billed date in the data.
+  report_date: null
+  top_n: 15
+  renewal_buffer: 0.10

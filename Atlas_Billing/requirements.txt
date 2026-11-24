@@ -1,0 +1,12 @@
+click
+httpx
+matplotlib
+numpy
+openpyxl
+pandas
+pyxlsb
+pymongo
+PyYAML
+scikit-learn
+seaborn
+xlrd
